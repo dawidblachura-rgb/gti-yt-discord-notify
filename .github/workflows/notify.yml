@@ -1,0 +1,37 @@
+name: Nowe filmy -> Discord
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notify
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sprawdź nowe filmy
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          YT_CHANNEL_ID: UCPsn33XmsBiEtLykXt625Yg
+          PING_ROLE_ID: "1561450269697515671"  # rola Ping Filmy
+        run: python3 notify.py
+
+      - name: Zapisz stan
+        run: |
+          if [ -n "$(git status --porcelain state.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add state.json
+            git commit -m "Aktualizacja listy ogłoszonych filmów"
+            git push
+          fi
